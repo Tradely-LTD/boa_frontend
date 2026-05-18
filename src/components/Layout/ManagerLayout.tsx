@@ -10,8 +10,11 @@ const pageTitles: Record<string, string> = {
   '/manager/inventory':     'Inventory & POS',
   '/manager/farm-inputs':   'Farm Inputs',
   '/manager/collections':   'Collection Requests',
-  '/manager/notifications': 'Notifications',
-  '/manager/settings':      'Settings',
+  '/manager/mechanization/fleet':       'My Tractor Fleet',
+  '/manager/mechanization/requests':    'Hire Requests',
+  '/manager/mechanization/deployments': 'Active Deployments',
+  '/manager/notifications':             'Notifications',
+  '/manager/settings':                  'Settings',
   '/collector/assignments': 'My Assignments',
 };
 

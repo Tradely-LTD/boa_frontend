@@ -2,12 +2,14 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../../../store/store';
 import { useGetReceiptsQuery } from '../receipts/services/receiptsApiSlice';
 import { useGetIntakesQuery } from '../intake/services/intakeApiSlice';
+import { useGetMechManagerStatsQuery } from '../../mechanization_screens/services/mechanizationApiSlice';
 
 export default function ManagerDashboardScreen() {
   const user = useSelector((s: RootState) => s.auth.user);
 
   const { data: receiptsData } = useGetReceiptsQuery({ limit: 100 });
   const { data: intakeData }   = useGetIntakesQuery({ limit: 100 });
+  const { data: mechStats }    = useGetMechManagerStatsQuery();
 
   const receipts   = receiptsData?.data ?? [];
   const intakes    = intakeData?.data   ?? [];
@@ -53,6 +55,25 @@ export default function ManagerDashboardScreen() {
         />
       </div>
 
+      {/* Mechanization widget */}
+      {mechStats && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              <span className="material-symbols-outlined text-boa-green text-lg">agriculture</span>
+              Mechanization
+            </h2>
+            <a href="/manager/mechanization/fleet" className="text-boa-green text-sm font-medium hover:underline">View fleet</a>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <MiniStat label="Tractors Assigned"  value={mechStats.assignedTractors}  color="text-slate-700 bg-white border-slate-200" />
+            <MiniStat label="Active Deployments" value={mechStats.activeDeployments} color="text-blue-700 bg-blue-50 border-blue-200" />
+            <MiniStat label="Pending Requests"   value={mechStats.pendingRequests}   color="text-amber-700 bg-amber-50 border-amber-200" />
+            <MiniStat label="Overdue Returns"    value={mechStats.overdueReturns}    color="text-red-700 bg-red-50 border-red-200" />
+          </div>
+        </div>
+      )}
+
       {/* Recent receipts */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -84,6 +105,16 @@ export default function ManagerDashboardScreen() {
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, color }: { label: string; value: number; color: string }) {
+  const [text, bg, border] = color.split(' ');
+  return (
+    <div className={`rounded-xl border px-4 py-3 ${bg} ${border}`}>
+      <p className={`text-[10px] font-semibold uppercase tracking-wide opacity-60 ${text}`}>{label}</p>
+      <p className={`text-2xl font-bold mt-0.5 ${text}`}>{value}</p>
     </div>
   );
 }

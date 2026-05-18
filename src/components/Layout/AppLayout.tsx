@@ -8,10 +8,13 @@ const pageTitles: Record<string, string> = {
   '/applications':  'Applications',
   '/centres':       'Aggregation Centres',
   '/loans':         'WR Financing',
-  '/reports':       'Reports & Analytics',
+  '/reports':        'Reports & Analytics',
+  '/reports/centre': 'Centre Report',
   '/users':         'User Management',
-  '/settings':      'Settings',
-  '/notifications': 'Notifications',
+  '/settings':                   'Settings',
+  '/notifications':              'Notifications',
+  '/mechanization/tractors':     'Tractor Inventory',
+  '/mechanization/deployments':  'Tractor Deployments',
 };
 
 export default function AppLayout() {

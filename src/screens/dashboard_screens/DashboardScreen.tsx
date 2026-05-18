@@ -1,6 +1,7 @@
 import { useSelector } from 'react-redux';
 import type { RootState } from '../../store/store';
 import { useGetApplicationsQuery } from '../applications_screens/services/applicationsApiSlice';
+import { useGetMechAdminStatsQuery } from '../mechanization_screens/services/mechanizationApiSlice';
 
 const statCards = [
   { label: 'Pending Review',    status: 'pending',      icon: 'pending',      color: 'text-amber-600  bg-amber-50  border-amber-200'  },
@@ -11,7 +12,8 @@ const statCards = [
 
 export default function DashboardScreen() {
   const user = useSelector((s: RootState) => s.auth.user);
-  const { data: allApps } = useGetApplicationsQuery({});
+  const { data: allApps }   = useGetApplicationsQuery({});
+  const { data: mechStats } = useGetMechAdminStatsQuery();
 
   const countByStatus = (status: string) =>
     allApps?.data.filter((a: any) => a.status === status).length ?? 0;
@@ -43,6 +45,25 @@ export default function DashboardScreen() {
         ))}
       </div>
 
+      {/* Mechanization widget */}
+      {mechStats && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+              <span className="material-symbols-outlined text-boa-green text-lg">agriculture</span>
+              Mechanization
+            </h2>
+            <a href="/mechanization/tractors" className="text-boa-green text-sm font-medium hover:underline">Manage</a>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <MiniStat label="Total Tractors"     value={mechStats.totalTractors}      color="text-slate-700 bg-white border-slate-200" />
+            <MiniStat label="Available"          value={mechStats.available}          color="text-emerald-700 bg-emerald-50 border-emerald-200" />
+            <MiniStat label="Active Deployments" value={mechStats.activeDeployments}  color="text-blue-700 bg-blue-50 border-blue-200" />
+            <MiniStat label="Overdue"            value={mechStats.overdueDeployments} color="text-red-700 bg-red-50 border-red-200" />
+          </div>
+        </div>
+      )}
+
       {/* Recent Applications */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -67,6 +88,16 @@ export default function DashboardScreen() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value, color }: { label: string; value: number; color: string }) {
+  const [text, bg, border] = color.split(' ');
+  return (
+    <div className={`rounded-xl border px-4 py-3 ${bg} ${border}`}>
+      <p className={`text-[10px] font-semibold uppercase tracking-wide opacity-60 ${text}`}>{label}</p>
+      <p className={`text-2xl font-bold mt-0.5 ${text}`}>{value}</p>
     </div>
   );
 }

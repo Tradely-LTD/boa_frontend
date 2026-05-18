@@ -15,6 +15,7 @@ import { ApplicationsScreen } from './screens/applications_screens';
 import { CentresScreen }      from './screens/centres_screens';
 import { UsersScreen }        from './screens/users_screens';
 import ReportsScreen          from './screens/reports_screens/ReportsScreen';
+import CentreReportScreen     from './screens/reports_screens/CentreReportScreen';
 import LoanApplicationsScreen from './screens/loan_screens/LoanApplicationsScreen';
 import { SettingsScreen }     from './screens/settings_screens';
 import { NotificationsScreen } from './screens/notifications_screens';
@@ -28,6 +29,11 @@ import FarmInputsScreen             from './screens/manager_screens/farm-inputs/
 import CollectionRequestsScreen       from './screens/manager_screens/collections/CollectionRequestsScreen';
 import MarketplaceListingsScreen      from './screens/manager_screens/marketplace/MarketplaceListingsScreen';
 import MarketplaceOrdersScreen        from './screens/manager_screens/marketplace/MarketplaceOrdersScreen';
+import TractorsScreen                 from './screens/mechanization_screens/TractorsScreen';
+import AdminMechDeploymentsScreen     from './screens/mechanization_screens/AdminMechDeploymentsScreen';
+import FleetScreen                    from './screens/manager_screens/mechanization/FleetScreen';
+import HireRequestsScreen             from './screens/manager_screens/mechanization/HireRequestsScreen';
+import MechDeploymentsScreen          from './screens/manager_screens/mechanization/MechDeploymentsScreen';
 
 // Collector screens
 import CollectionAssignmentsScreen  from './screens/collector_screens/CollectionAssignmentsScreen';
@@ -57,10 +63,13 @@ export default function App() {
               <Route path="/applications"  element={<ApplicationsScreen />} />
               <Route path="/centres"       element={<CentresScreen />} />
               <Route path="/loans"         element={<LoanApplicationsScreen />} />
-              <Route path="/reports"       element={<ReportsScreen />} />
+              <Route path="/reports"                element={<ReportsScreen />} />
+              <Route path="/reports/centre"        element={<CentreReportScreen />} />
               <Route path="/users"         element={<UsersScreen />} />
-              <Route path="/settings"      element={<SettingsScreen />} />
-              <Route path="/notifications" element={<NotificationsScreen />} />
+              <Route path="/settings"                    element={<SettingsScreen />} />
+              <Route path="/notifications"              element={<NotificationsScreen />} />
+              <Route path="/mechanization/tractors"     element={<TractorsScreen />} />
+              <Route path="/mechanization/deployments"  element={<AdminMechDeploymentsScreen />} />
             </Route>
           </Route>
 
@@ -75,6 +84,9 @@ export default function App() {
               <Route path="/manager/collections"              element={<CollectionRequestsScreen />} />
               <Route path="/manager/marketplace/listings"    element={<MarketplaceListingsScreen />} />
               <Route path="/manager/marketplace/orders"      element={<MarketplaceOrdersScreen />} />
+              <Route path="/manager/mechanization/fleet"        element={<FleetScreen />} />
+              <Route path="/manager/mechanization/requests"     element={<HireRequestsScreen />} />
+              <Route path="/manager/mechanization/deployments"  element={<MechDeploymentsScreen />} />
               <Route path="/manager/notifications" element={<NotificationsScreen />} />
               <Route path="/manager/settings"      element={<SettingsScreen />} />
             </Route>

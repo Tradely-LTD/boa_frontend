@@ -10,8 +10,11 @@ const navItems = [
   { label: 'Inventory & POS',     icon: 'point_of_sale',    to: '/manager/inventory',    group: 'main' },
   { label: 'Farm Inputs',         icon: 'grass',            to: '/manager/farm-inputs',  group: 'main' },
   { label: 'Collections',         icon: 'local_shipping',   to: '/manager/collections',  group: 'main' },
-  { label: 'My Listings',         icon: 'storefront',       to: '/manager/marketplace/listings', group: 'market' },
-  { label: 'Marketplace Orders',  icon: 'shopping_bag',     to: '/manager/marketplace/orders',   group: 'market' },
+  { label: 'My Listings',         icon: 'storefront',       to: '/manager/marketplace/listings',        group: 'market' },
+  { label: 'Marketplace Orders',  icon: 'shopping_bag',     to: '/manager/marketplace/orders',          group: 'market' },
+  { label: 'My Fleet',            icon: 'agriculture',      to: '/manager/mechanization/fleet',         group: 'mech' },
+  { label: 'Hire Requests',       icon: 'assignment',       to: '/manager/mechanization/requests',      group: 'mech' },
+  { label: 'Deployments',         icon: 'near_me',          to: '/manager/mechanization/deployments',   group: 'mech' },
   { label: 'Notifications',       icon: 'notifications',    to: '/manager/notifications', group: 'system' },
   { label: 'Settings',            icon: 'settings',         to: '/manager/settings',      group: 'system' },
 ];
@@ -89,6 +92,25 @@ export default function ManagerSidebar({ open, onClose }: ManagerSidebarProps) {
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 text-sm font-medium transition
                 ${isActive
                   ? 'bg-harvest-gold text-emerald-950'
+                  : 'text-emerald-300 hover:bg-emerald-900 hover:text-white'
+                }`
+              }
+            >
+              <span className="material-symbols-outlined text-xl">{item.icon}</span>
+              {item.label}
+            </NavLink>
+          ))}
+
+          <p className="text-emerald-600 text-xs font-semibold uppercase tracking-wider px-3 mt-5 mb-2">Mechanization</p>
+          {navItems.filter(i => i.group === 'mech').map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 text-sm font-medium transition
+                ${isActive
+                  ? 'bg-boa-green text-white'
                   : 'text-emerald-300 hover:bg-emerald-900 hover:text-white'
                 }`
               }

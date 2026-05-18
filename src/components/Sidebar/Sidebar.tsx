@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../store/authSlice';
 import type { RootState } from '../../store/store';
 
-const navItems = [
+const mainNav = [
   { label: 'Dashboard',            icon: 'dashboard',         to: '/dashboard' },
   { label: 'Applications',         icon: 'assignment',        to: '/applications' },
   { label: 'Aggregation Centres',  icon: 'warehouse',         to: '/centres' },
@@ -12,6 +12,11 @@ const navItems = [
   { label: 'Users',                icon: 'manage_accounts',   to: '/users',  superAdminOnly: true },
   { label: 'Notifications',        icon: 'notifications',     to: '/notifications' },
   { label: 'Settings',             icon: 'settings',          to: '/settings' },
+];
+
+const mechNav = [
+  { label: 'Tractors',    icon: 'agriculture', to: '/mechanization/tractors' },
+  { label: 'Deployments', icon: 'near_me',     to: '/mechanization/deployments' },
 ];
 
 interface SidebarProps {
@@ -61,7 +66,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
           <p className="text-emerald-600 text-xs font-semibold uppercase tracking-wider px-3 mb-2">Menu</p>
-          {navItems
+          {mainNav
             .filter(item => !item.superAdminOnly || user?.role === 'super_admin')
             .map((item) => (
               <NavLink
@@ -80,6 +85,25 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 {item.label}
               </NavLink>
             ))}
+
+          <p className="text-emerald-600 text-xs font-semibold uppercase tracking-wider px-3 mt-5 mb-2">Mechanization</p>
+          {mechNav.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={onClose}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl mb-0.5 text-sm font-medium transition
+                ${isActive
+                  ? 'bg-boa-green text-white'
+                  : 'text-emerald-300 hover:bg-emerald-900 hover:text-white'
+                }`
+              }
+            >
+              <span className="material-symbols-outlined text-xl">{item.icon}</span>
+              {item.label}
+            </NavLink>
+          ))}
         </nav>
 
         {/* User / Logout */}
