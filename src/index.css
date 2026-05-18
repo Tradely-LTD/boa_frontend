@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body { @apply font-sans text-slate-800 bg-slate-50; }
+}
+
+@layer components {
+  .label { @apply block text-sm font-medium text-slate-700 mb-1; }
+  .input { @apply w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-200 bg-white; }
+}
+
+
+/* Prevent Tailwind preflight from clipping Leaflet tile images */
+.leaflet-container img {
+  max-width: none;
+  max-height: none;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  user-select: none;
+  vertical-align: middle;
+}
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+@media print {
+  /* Hide chrome */
+  aside, header, nav, .print\:hidden { display: none !important; }
+  /* Reset layout — no sidebar offset */
+  body { background: white !important; font-size: 9px !important; }
+  main { margin-left: 0 !important; padding: 0 !important; }
+  .ml-64 { margin-left: 0 !important; }
+  /* Remove shadows; keep subtle rounding */
+  * { box-shadow: none !important; border-radius: 4px !important; }
+  /* Avoid page breaks inside cards */
+  .grid > div, section { break-inside: avoid; }
+  /* Ensure colours print (green backgrounds, badges, chart bars) */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  /* Reduce chart heights for single-page fit */
+  .flex.items-end { height: 80px !important; }
+  /* Scale down padding on cards */
+  .p-8 { padding: 12px !important; }
+  .p-6 { padding: 10px !important; }
+  .p-5 { padding: 8px !important; }
+  /* Tighten KPI cards */
+  .text-3xl { font-size: 16px !important; }
+  .text-2xl { font-size: 14px !important; }
+  .text-xl  { font-size: 13px !important; }
+  h1, h2 { font-size: 12px !important; }
+  p, span, td, th { font-size: 8px !important; }
+}

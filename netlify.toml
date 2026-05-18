@@ -1,0 +1,16 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Proxy /api/* to the Linode backend (avoids CORS and keeps frontend code clean)
+[[redirects]]
+  from = "/api/*"
+  to = "http://172.105.43.146:4001/api/:splat"
+  status = 200
+  force = true
+
+# SPA fallback — all non-file routes go to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
