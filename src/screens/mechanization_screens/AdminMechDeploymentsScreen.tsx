@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import { useGetAllDeploymentsQuery } from './services/mechanizationApiSlice';
 
-// ── Leaflet pins ──────────────────────────────────────────────────────────────
-const makePin = (color: string) =>
-  L.divIcon({
+// ── Vanilla Leaflet map (same pattern as CentresScreen) ───────────────────────
+function makePin(color: string) {
+  return L.divIcon({
     className: '',
     html: `<div style="
       width:22px;height:22px;border-radius:50% 50% 50% 0;
@@ -13,13 +12,92 @@ const makePin = (color: string) =>
       box-shadow:0 3px 8px rgba(0,0,0,.4);
       transform:rotate(-45deg);
     "></div>`,
-    iconSize: [22, 22], iconAnchor: [11, 22], popupAnchor: [0, -26],
+    iconSize: [22, 22] as [number, number],
+    iconAnchor: [11, 22] as [number, number],
+    popupAnchor: [0, -26] as [number, number],
   });
+}
 
-const PIN_ACTIVE  = makePin('#3b82f6');
-const PIN_OVERDUE = makePin('#ef4444');
+type LiveDep = {
+  id: number; refId: string; status: string;
+  tractorModel: string; tractorSerial: string;
+  facName: string; farmerName: string; farmerPhone: string;
+  deployedAt: string; expectedReturnAt: string;
+  implementsAttached: string[];
+  lastKnownLat: number; lastKnownLng: number; lastLocationAt: string | null;
+};
 
-const NIGERIA_CENTER: [number, number] = [9.08, 8.68];
+function TractorMap({ pins }: { pins: LiveDep[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef       = useRef<L.Map | null>(null);
+  const markersRef   = useRef<L.Marker[]>([]);
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+    const map = L.map(containerRef.current).setView([9.08, 8.68], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18,
+    }).addTo(map);
+    mapRef.current = map;
+    return () => { map.remove(); mapRef.current = null; markersRef.current = []; };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    pins.forEach(d => {
+      const color = d.status === 'overdue' ? '#ef4444' : '#3b82f6';
+      const marker = L.marker([d.lastKnownLat, d.lastKnownLng], { icon: makePin(color) })
+        .addTo(map)
+        .bindPopup(`
+          <div style="min-width:220px;font-family:sans-serif;font-size:12px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <span style="
+                background:${d.status === 'overdue' ? '#fee2e2' : '#dbeafe'};
+                color:${d.status === 'overdue' ? '#dc2626' : '#1d4ed8'};
+                font-weight:700;font-size:10px;padding:2px 8px;border-radius:99px;
+              ">${d.status.toUpperCase()}</span>
+              <span style="color:#94a3b8;font-size:10px;font-family:monospace">${d.refId}</span>
+            </div>
+            <p style="font-weight:700;font-size:14px;margin:0">${d.tractorModel}</p>
+            <p style="color:#94a3b8;font-size:10px;font-family:monospace;margin:0 0 6px">${d.tractorSerial}</p>
+            <hr style="border:none;border-top:1px solid #f1f5f9;margin:6px 0"/>
+            <p style="margin:2px 0"><span style="color:#94a3b8">FAC: </span>${d.facName}</p>
+            <p style="margin:2px 0"><span style="color:#94a3b8">Farmer: </span>${d.farmerName}</p>
+            <p style="margin:2px 0"><span style="color:#94a3b8">Phone: </span>${d.farmerPhone}</p>
+            <hr style="border:none;border-top:1px solid #f1f5f9;margin:6px 0"/>
+            <p style="margin:2px 0"><span style="color:#94a3b8">Deployed: </span>${new Date(d.deployedAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</p>
+            <p style="margin:2px 0"><span style="color:#94a3b8">Due back: </span><span style="${d.status === 'overdue' ? 'color:#dc2626;font-weight:700' : ''}">${new Date(d.expectedReturnAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span></p>
+            ${d.implementsAttached.length > 0 ? `
+              <hr style="border:none;border-top:1px solid #f1f5f9;margin:6px 0"/>
+              <p style="color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 3px">Implements</p>
+              <div style="display:flex;flex-wrap:wrap;gap:3px">
+                ${d.implementsAttached.map(i => `<span style="background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:99px;font-size:10px">${i}</span>`).join('')}
+              </div>
+            ` : ''}
+            <hr style="border:none;border-top:1px solid #f1f5f9;margin:6px 0"/>
+            <p style="color:#94a3b8;font-size:10px;margin:0">
+              <span style="color:#059669;font-weight:600">GPS:</span>
+              ${d.lastKnownLat.toFixed(5)}, ${d.lastKnownLng.toFixed(5)}
+            </p>
+            ${d.lastLocationAt ? `<p style="color:#94a3b8;font-size:10px;margin:2px 0 0">Updated: ${new Date(d.lastLocationAt).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</p>` : ''}
+          </div>
+        `);
+      markersRef.current.push(marker);
+    });
+  }, [pins]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ height: 520, width: '100%', borderRadius: 16, overflow: 'hidden', isolation: 'isolate' }}
+    />
+  );
+}
 
 const STATUS_STYLE: Record<string, string> = {
   active:   'bg-blue-100 text-blue-700',
@@ -32,9 +110,6 @@ const STATUS_LABEL: Record<string, string> = {
 
 function fmt(d: string) {
   return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-function fmtTime(d: string) {
-  return new Date(d).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 export default function AdminMechDeploymentsScreen() {
@@ -52,8 +127,7 @@ export default function AdminMechDeploymentsScreen() {
     ? deployments
     : deployments.filter(d => d.status === statusFilter);
 
-  // Map: only non-returned deployments with real GPS
-  const livePins    = deployments.filter(d => d.status !== 'returned' && d.lastKnownLat !== null && d.lastKnownLng !== null);
+  const livePins    = deployments.filter(d => d.status !== 'returned' && d.lastKnownLat !== null && d.lastKnownLng !== null) as LiveDep[];
   const awaitingGps = deployments.filter(d => d.status !== 'returned' && (d.lastKnownLat === null || d.lastKnownLng === null));
 
   return (
@@ -200,71 +274,7 @@ export default function AdminMechDeploymentsScreen() {
           </div>
 
           {/* Map */}
-          <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm" style={{ height: 520 }}>
-            <MapContainer center={NIGERIA_CENTER} zoom={6} style={{ height: '100%', width: '100%' }}>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {livePins.map(d => (
-                <Marker
-                  key={d.id}
-                  position={[d.lastKnownLat!, d.lastKnownLng!]}
-                  icon={d.status === 'overdue' ? PIN_OVERDUE : PIN_ACTIVE}
-                >
-                  <Popup minWidth={230}>
-                    <div className="space-y-1 text-xs">
-                      {/* Status badge + ref */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${STATUS_STYLE[d.status]}`}>
-                          {d.status.toUpperCase()}
-                        </span>
-                        <span className="font-mono text-slate-400 text-[10px]">{d.refId}</span>
-                      </div>
-
-                      {/* Tractor */}
-                      <p className="font-bold text-slate-800 text-sm">{d.tractorModel}</p>
-                      <p className="font-mono text-slate-400 text-[10px]">{d.tractorSerial}</p>
-
-                      <hr className="my-2 border-slate-100" />
-
-                      {/* FAC */}
-                      <PopupRow icon="warehouse" label="FAC"    value={d.facName} />
-                      <PopupRow icon="person"    label="Farmer" value={d.farmerName} />
-                      <PopupRow icon="call"      label="Phone"  value={d.farmerPhone} />
-
-                      <hr className="my-2 border-slate-100" />
-
-                      <PopupRow icon="calendar_today" label="Deployed"  value={fmt(d.deployedAt)} />
-                      <PopupRow icon="event"          label="Due back"  value={fmt(d.expectedReturnAt)} />
-
-                      {/* Implements */}
-                      {d.implementsAttached.length > 0 && (
-                        <div className="pt-1">
-                          <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">Implements</p>
-                          <div className="flex flex-wrap gap-1">
-                            {d.implementsAttached.map(i => (
-                              <span key={i} className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px]">{i}</span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* GPS info */}
-                      <hr className="my-2 border-slate-100" />
-                      <p className="text-[10px] text-slate-400">
-                        <span className="font-medium text-emerald-600">GPS:</span>{' '}
-                        {d.lastKnownLat?.toFixed(5)}, {d.lastKnownLng?.toFixed(5)}
-                      </p>
-                      {d.lastLocationAt && (
-                        <p className="text-[10px] text-slate-400">Updated: {fmtTime(d.lastLocationAt)}</p>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          </div>
+          <TractorMap pins={livePins} />
 
           {/* Awaiting GPS */}
           {awaitingGps.length > 0 && (
@@ -305,15 +315,6 @@ export default function AdminMechDeploymentsScreen() {
   );
 }
 
-function PopupRow({ icon, label, value }: { icon: string; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="material-symbols-outlined text-slate-400" style={{ fontSize: 12 }}>{icon}</span>
-      <span className="text-slate-400">{label}:</span>
-      <span className="font-medium text-slate-700">{value}</span>
-    </div>
-  );
-}
 
 function StatCard({ label, value, icon, color }: { label: string; value: number; icon: string; color: string }) {
   const [text, bg, border] = color.split(' ');
