@@ -98,18 +98,26 @@ export default function MarketplaceListingsScreen() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
+    // reset input so the same file can be re-selected after an error
+    e.target.value = '';
     setUploadingImg(true);
-    const uploaded: string[] = [];
-    for (const file of files) {
-      const ext = file.name.split('.').pop() ?? 'jpg';
-      const { uploadUrl, objectUrl } = await getPresignedUrl({ fileExtension: ext }).unwrap();
-      await axios.put(uploadUrl, file, { headers: { 'Content-Type': file.type } });
-      uploaded.push(objectUrl);
+    setError('');
+    try {
+      const uploaded: string[] = [];
+      for (const file of files) {
+        const ext = file.name.split('.').pop() ?? 'jpg';
+        const { uploadUrl, objectUrl } = await getPresignedUrl({ fileExtension: ext }).unwrap();
+        await axios.put(uploadUrl, file, { headers: { 'Content-Type': file.type } });
+        uploaded.push(objectUrl);
+      }
+      const next = [...previewImages, ...uploaded];
+      setPreviewImages(next);
+      setForm(f => ({ ...f, images: next }));
+    } catch (err: any) {
+      setError(err?.data?.message ?? err?.message ?? 'Image upload failed. Please try again.');
+    } finally {
+      setUploadingImg(false);
     }
-    const next = [...previewImages, ...uploaded];
-    setPreviewImages(next);
-    setForm(f => ({ ...f, images: next }));
-    setUploadingImg(false);
   };
 
   const handleSubmit = async () => {
