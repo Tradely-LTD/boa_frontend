@@ -10,7 +10,7 @@ export default function UsersScreen() {
   const [updateUser]        = useUpdateUserMutation();
   const [createUser, { isLoading: creating }] = useCreateUserMutation();
 
-  const { data: centresData } = useGetCentresQuery({});
+  const { data: centresData } = useGetCentresQuery({ limit: 500 });
   const centres = centresData?.data ?? [];
 
   const [showCreate, setShowCreate] = useState(false);
