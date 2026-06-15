@@ -13,8 +13,6 @@ const today = new Date().toISOString().slice(0, 10);
 export default function ShopSalesScreen() {
   const user   = useSelector((s: RootState) => s.auth.user);
   const shopId = (user as any)?.shopId as number;
-  const isOwner = user?.role === 'shop_owner';
-
   const { data: salesData, isLoading }      = useListShopSalesQuery(shopId, { skip: !shopId });
   const { data: inventoryData }             = useGetShopInventoryQuery(shopId, { skip: !shopId });
   const [createSale, { isLoading: submitting }] = useCreateShopSaleMutation();

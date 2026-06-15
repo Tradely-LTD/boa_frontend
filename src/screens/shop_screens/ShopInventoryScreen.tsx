@@ -9,8 +9,6 @@ const GRADE_OPTIONS     = ['Grade A', 'Grade B', 'Grade C'];
 export default function ShopInventoryScreen() {
   const user   = useSelector((s: RootState) => s.auth.user);
   const shopId = (user as any)?.shopId as number;
-  const isOwner = user?.role === 'shop_owner';
-
   const { data, isLoading, refetch } = useGetShopInventoryQuery(shopId, { skip: !shopId });
   const [logIntake, { isLoading: submitting }]  = useCreateShopIntakeMutation();
 

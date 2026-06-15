@@ -15,7 +15,7 @@ export default function CommodityPricesScreen() {
 
   const { data, isLoading }                              = useGetCommodityPricesQuery();
   const [upsertPrice,  { isLoading: saving }]            = useUpsertCommodityPriceMutation();
-  const [deletePrice,  { isLoading: deleting }]          = useDeleteCommodityPriceMutation();
+  const [deletePrice]          = useDeleteCommodityPriceMutation();
 
   const [showForm, setShowForm]   = useState(false);
   const [editing, setEditing]     = useState<CommodityPrice | null>(null);

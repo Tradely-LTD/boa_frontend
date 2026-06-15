@@ -71,7 +71,6 @@ export default function InventoryScreen() {
   };
 
   const overview      = inventoryData?.data ?? [];
-  const totalAvailKg  = overview.reduce((s, r) => s + r.availableKg, 0);
   const totalSoldKg   = overview.reduce((s, r) => s + r.totalSoldKg, 0);
   const totalTradeKg  = overview.reduce((s, r) => s + r.totalTradeKg, 0);
   const totalStorKg   = overview.reduce((s, r) => s + r.totalStorageKg, 0);

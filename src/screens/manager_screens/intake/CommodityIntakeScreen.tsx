@@ -151,7 +151,6 @@ export default function CommodityIntakeScreen() {
   const totalToday   = intakes
     .filter(i => i.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10))
     .reduce((sum, i) => sum + i.quantityKg, 0);
-  const totalAll     = intakes.reduce((sum, i) => sum + i.quantityKg, 0);
   const totalTrade   = intakes.filter(i => i.transactionType !== 'storage').reduce((s, i) => s + i.quantityKg, 0);
   const totalStorage = intakes.filter(i => i.transactionType === 'storage').reduce((s, i) => s + i.quantityKg, 0);
 

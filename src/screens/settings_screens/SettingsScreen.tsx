@@ -39,7 +39,7 @@ export default function SettingsScreen() {
     try {
       const result = await updateProfile({ name, email }).unwrap();
       if (token && result.data) {
-        dispatch(setCredentials({ token, user: { id: result.data.id, email: result.data.email, name: result.data.name, role: result.data.role } }));
+        dispatch(setCredentials({ token, user: { id: result.data.id, userId: result.data.id, email: result.data.email, name: result.data.name, role: result.data.role, centreId: currentUser?.centreId, shopId: currentUser?.shopId } }));
       }
       setProfileMsg({ ok: true, text: 'Profile updated successfully.' });
     } catch (err: any) {

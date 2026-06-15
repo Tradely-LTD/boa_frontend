@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useSelector } from 'react-redux';
-import type { RootState } from '../../store/store';
 import {
   useListShopsQuery, useCreateShopMutation, useUpdateShopStatusMutation,
   type Shop,
@@ -9,8 +7,6 @@ import {
 const BUSINESS_TYPES = ['Grain Trading', 'Commodity Aggregation', 'Input Supply', 'Processing', 'General Trade'];
 
 export default function ManagerShopsScreen() {
-  const user = useSelector((s: RootState) => s.auth.user);
-
   const { data, isLoading }                         = useListShopsQuery();
   const [createShop,      { isLoading: creating }]  = useCreateShopMutation();
   const [updateStatus,    { isLoading: updating }]  = useUpdateShopStatusMutation();
