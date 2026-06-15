@@ -5,9 +5,11 @@ export interface InventoryOverviewRow {
   centreId: number;
   centreName: string;
   commodity: string;
+  totalTradeKg: number;
+  totalStorageKg: number;
   totalReceivedKg: number;
   totalSoldKg: number;
-  availableKg: number;
+  availableKg: number;  // trade stock minus sold — what can actually be sold
   intakeCount: number;
 }
 

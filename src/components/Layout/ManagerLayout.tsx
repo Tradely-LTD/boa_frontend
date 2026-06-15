@@ -15,6 +15,8 @@ const pageTitles: Record<string, string> = {
   '/manager/mechanization/deployments': 'Active Deployments',
   '/manager/notifications':             'Notifications',
   '/manager/settings':                  'Settings',
+  '/manager/commodity-prices':          'Commodity Prices',
+  '/manager/shops':                     'Container Shops',
   '/collector/assignments': 'My Assignments',
 };
 

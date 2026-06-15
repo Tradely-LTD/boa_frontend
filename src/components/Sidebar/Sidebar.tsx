@@ -10,6 +10,7 @@ const mainNav = [
   { label: 'WR Financing',         icon: 'account_balance',   to: '/loans' },
   { label: 'Reports',              icon: 'bar_chart',         to: '/reports' },
   { label: 'Users',                icon: 'manage_accounts',   to: '/users',  superAdminOnly: true },
+  { label: 'Commodity Prices',     icon: 'price_change',      to: '/commodity-prices' },
   { label: 'Notifications',        icon: 'notifications',     to: '/notifications' },
   { label: 'Settings',             icon: 'settings',          to: '/settings' },
 ];

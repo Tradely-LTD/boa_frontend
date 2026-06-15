@@ -70,9 +70,11 @@ export default function InventoryScreen() {
     }
   };
 
-  const overview     = inventoryData?.data ?? [];
-  const totalAvailKg = overview.reduce((s, r) => s + r.availableKg, 0);
-  const totalSoldKg  = overview.reduce((s, r) => s + r.totalSoldKg, 0);
+  const overview      = inventoryData?.data ?? [];
+  const totalAvailKg  = overview.reduce((s, r) => s + r.availableKg, 0);
+  const totalSoldKg   = overview.reduce((s, r) => s + r.totalSoldKg, 0);
+  const totalTradeKg  = overview.reduce((s, r) => s + r.totalTradeKg, 0);
+  const totalStorKg   = overview.reduce((s, r) => s + r.totalStorageKg, 0);
   const sales        = salesData?.data ?? [];
   const todaySales   = sales.filter(s => s.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10));
   const todayRevenue = todaySales.reduce((sum, s) => sum + s.totalAmount, 0);
@@ -122,11 +124,11 @@ export default function InventoryScreen() {
       {/* ── PRODUCE TAB ── */}
       {activeTab === 'produce' && <>
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Commodity Types"   value={overview.length}                           icon="category"       color="bg-emerald-50 text-emerald-700 border-emerald-200" />
-        <StatCard label="Total Available"   value={`${totalAvailKg.toLocaleString()} kg`}     icon="inventory_2"    color="bg-blue-50 text-blue-700 border-blue-200" />
-        <StatCard label="Total Sold"        value={`${totalSoldKg.toLocaleString()} kg`}      icon="shopping_cart"  color="bg-amber-50 text-amber-700 border-amber-200" />
-        <StatCard label="Today's Revenue"   value={`₦${todayRevenue.toLocaleString()}`}       icon="payments"       color="bg-purple-50 text-purple-700 border-purple-200" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <StatCard label="For Trade"         value={`${totalTradeKg.toLocaleString()} kg`}     icon="store"          color="bg-emerald-50 text-emerald-700 border-emerald-200" />
+        <StatCard label="In Storage"        value={`${totalStorKg.toLocaleString()} kg`}      icon="warehouse"      color="bg-purple-50 text-purple-700 border-purple-200" />
+        <StatCard label="Sold"              value={`${totalSoldKg.toLocaleString()} kg`}      icon="shopping_cart"  color="bg-amber-50 text-amber-700 border-amber-200" />
+        <StatCard label="Today's Revenue"   value={`₦${todayRevenue.toLocaleString()}`}       icon="payments"       color="bg-blue-50 text-blue-700 border-blue-200" />
       </div>
 
       {/* Pie chart + Stock table side by side */}
@@ -169,9 +171,10 @@ export default function InventoryScreen() {
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
                   <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Commodity</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Received</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Sold</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Available</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Trade Stock</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Storage Stock</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Sold</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Available for Sale</th>
                   <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Intakes</th>
                 </tr>
               </thead>
@@ -179,7 +182,10 @@ export default function InventoryScreen() {
                 {overview.map((row) => (
                   <tr key={`${row.centreId}-${row.commodity}`} className="hover:bg-slate-50">
                     <td className="px-5 py-3.5 font-medium text-slate-800">{row.commodity}</td>
-                    <td className="px-5 py-3.5 text-slate-600">{row.totalReceivedKg.toLocaleString()} kg</td>
+                    <td className="px-5 py-3.5 text-slate-600">{row.totalTradeKg.toLocaleString()} kg</td>
+                    <td className="px-5 py-3.5">
+                      <span className="text-purple-700 font-medium">{row.totalStorageKg.toLocaleString()} kg</span>
+                    </td>
                     <td className="px-5 py-3.5 text-slate-600">{row.totalSoldKg.toLocaleString()} kg</td>
                     <td className="px-5 py-3.5">
                       <span className={`font-semibold ${row.availableKg > 0 ? 'text-emerald-700' : 'text-red-500'}`}>

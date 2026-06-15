@@ -7,6 +7,7 @@ import ProtectedRoute  from './components/Layout/ProtectedRoute';
 import AppLayout       from './components/Layout/AppLayout';
 import ManagerLayout   from './components/Layout/ManagerLayout';
 import CollectorLayout from './components/Layout/CollectorLayout';
+import ShopLayout      from './components/Layout/ShopLayout';
 import { LoginScreen } from './screens/auth_screens';
 
 // Admin screens
@@ -34,18 +35,30 @@ import AdminMechDeploymentsScreen     from './screens/mechanization_screens/Admi
 import FleetScreen                    from './screens/manager_screens/mechanization/FleetScreen';
 import HireRequestsScreen             from './screens/manager_screens/mechanization/HireRequestsScreen';
 import MechDeploymentsScreen          from './screens/manager_screens/mechanization/MechDeploymentsScreen';
+import CommodityPricesScreen          from './screens/manager_screens/prices/CommodityPricesScreen';
+import ManagerShopsScreen             from './screens/shop_screens/ManagerShopsScreen';
 
 // Collector screens
 import CollectionAssignmentsScreen  from './screens/collector_screens/CollectionAssignmentsScreen';
 
+// Shop portal screens
+import ShopDashboardScreen  from './screens/shop_screens/ShopDashboardScreen';
+import ShopInventoryScreen  from './screens/shop_screens/ShopInventoryScreen';
+import ShopSalesScreen      from './screens/shop_screens/ShopSalesScreen';
+import ShopExpensesScreen   from './screens/shop_screens/ShopExpensesScreen';
+import ShopStaffScreen      from './screens/shop_screens/ShopStaffScreen';
+
 const ADMIN_ROLES     = ['admin', 'super_admin'];
 const MANAGER_ROLES   = ['centre_manager'];
 const COLLECTOR_ROLES = ['collector'];
+const SHOP_ROLES      = ['shop_owner', 'sales_rep'];
 
 function RoleRedirect() {
   const user = useSelector((s: RootState) => s.auth.user);
   if (user?.role === 'centre_manager') return <Navigate to="/manager/dashboard" replace />;
   if (user?.role === 'collector')      return <Navigate to="/collector/assignments" replace />;
+  if (user?.role === 'shop_owner')     return <Navigate to="/shop/dashboard" replace />;
+  if (user?.role === 'sales_rep')      return <Navigate to="/shop/dashboard" replace />;
   return <Navigate to="/dashboard" replace />;
 }
 
@@ -70,6 +83,7 @@ export default function App() {
               <Route path="/notifications"              element={<NotificationsScreen />} />
               <Route path="/mechanization/tractors"     element={<TractorsScreen />} />
               <Route path="/mechanization/deployments"  element={<AdminMechDeploymentsScreen />} />
+              <Route path="/commodity-prices"           element={<CommodityPricesScreen />} />
             </Route>
           </Route>
 
@@ -89,6 +103,8 @@ export default function App() {
               <Route path="/manager/mechanization/deployments"  element={<MechDeploymentsScreen />} />
               <Route path="/manager/notifications" element={<NotificationsScreen />} />
               <Route path="/manager/settings"      element={<SettingsScreen />} />
+              <Route path="/manager/commodity-prices" element={<CommodityPricesScreen />} />
+              <Route path="/manager/shops"            element={<ManagerShopsScreen />} />
             </Route>
           </Route>
 
@@ -96,6 +112,17 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={COLLECTOR_ROLES} />}>
             <Route element={<CollectorLayout />}>
               <Route path="/collector/assignments" element={<CollectionAssignmentsScreen />} />
+            </Route>
+          </Route>
+
+          {/* Shop portal */}
+          <Route element={<ProtectedRoute allowedRoles={SHOP_ROLES} />}>
+            <Route element={<ShopLayout />}>
+              <Route path="/shop/dashboard"  element={<ShopDashboardScreen />} />
+              <Route path="/shop/inventory"  element={<ShopInventoryScreen />} />
+              <Route path="/shop/sales"      element={<ShopSalesScreen />} />
+              <Route path="/shop/expenses"   element={<ShopExpensesScreen />} />
+              <Route path="/shop/staff"      element={<ShopStaffScreen />} />
             </Route>
           </Route>
 

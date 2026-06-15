@@ -10,6 +10,8 @@ const navItems = [
   { label: 'Inventory & POS',     icon: 'point_of_sale',    to: '/manager/inventory',    group: 'main' },
   { label: 'Farm Inputs',         icon: 'grass',            to: '/manager/farm-inputs',  group: 'main' },
   { label: 'Collections',         icon: 'local_shipping',   to: '/manager/collections',  group: 'main' },
+  { label: 'Container Shops',     icon: 'add_business',     to: '/manager/shops',        group: 'main' },
+  { label: 'Commodity Prices',    icon: 'price_change',     to: '/manager/commodity-prices', group: 'main' },
   { label: 'My Listings',         icon: 'storefront',       to: '/manager/marketplace/listings',        group: 'market' },
   { label: 'Marketplace Orders',  icon: 'shopping_bag',     to: '/manager/marketplace/orders',          group: 'market' },
   { label: 'My Fleet',            icon: 'agriculture',      to: '/manager/mechanization/fleet',         group: 'mech' },

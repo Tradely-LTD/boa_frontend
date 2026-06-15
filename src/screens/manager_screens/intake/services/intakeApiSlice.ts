@@ -1,6 +1,13 @@
 import { emptyApi } from '../../../../store/emptyApi';
 import type { PaginatedResponse, PaginationParams } from '../../../../types/pagination';
 
+export interface QualitySpecs {
+  moistureContent?: number;  // %
+  foreignMatter?: number;    // %
+  pestDamage?: number;       // %
+  brokenGrains?: number;     // %
+}
+
 export interface CommodityIntake {
   id: number;
   refId: string;
@@ -9,6 +16,8 @@ export interface CommodityIntake {
   commodity: string;
   quantityKg: number;
   gradeQuality: string | null;
+  transactionType: 'trade' | 'storage';
+  qualitySpecs: string; // JSON string — parse with JSON.parse
   sourceType: 'farmer' | 'supplier';
   supplierId: number | null;
   supplierName: string | null;
@@ -26,6 +35,8 @@ export interface CreateIntakeBody {
   commodity: string;
   quantityKg: number;
   gradeQuality?: string;
+  transactionType?: 'trade' | 'storage';
+  qualitySpecs?: QualitySpecs;
   sourceType?: 'farmer' | 'supplier';
   supplierId?: number;
   supplierName?: string;

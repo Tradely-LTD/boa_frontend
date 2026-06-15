@@ -15,6 +15,7 @@ export default function ProtectedRoute({ allowedRoles }: Props) {
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     if (user.role === 'centre_manager') return <Navigate to="/manager/dashboard" replace />;
     if (user.role === 'collector')      return <Navigate to="/collector/assignments" replace />;
+    if (user.role === 'shop_owner' || user.role === 'sales_rep') return <Navigate to="/shop/dashboard" replace />;
     return <Navigate to="/dashboard" replace />;
   }
 

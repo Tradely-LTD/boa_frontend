@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { RootState } from '../../../store/store';
-import { useGetIntakesQuery, useCreateIntakeMutation, type CommodityIntake } from './services/intakeApiSlice';
+import { useGetIntakesQuery, useCreateIntakeMutation, type CommodityIntake, type QualitySpecs } from './services/intakeApiSlice';
 import { useCreateReceiptMutation, type WarehouseReceipt } from '../receipts/services/receiptsApiSlice';
 import { useGetSuppliersQuery } from '../farm-inputs/services/farmInputsApiSlice';
 import PrintReceiptModal from '../../../components/PrintReceiptModal/PrintReceiptModal';
@@ -10,12 +10,21 @@ import Pagination from '../../../components/Pagination/Pagination';
 
 const COMMODITIES = ['Maize', 'Rice', 'Sorghum', 'Millet', 'Cowpea', 'Groundnut', 'Soybean', 'Cassava', 'Yam', 'Sweet Potato', 'Wheat', 'Sesame', 'Other'];
 
+const EMPTY_QUALITY: QualitySpecs = {
+  moistureContent: undefined,
+  foreignMatter:   undefined,
+  pestDamage:      undefined,
+  brokenGrains:    undefined,
+};
+
 const EMPTY_FORM = {
   commodity: '', quantityKg: '', gradeQuality: '',
+  transactionType: 'trade' as 'trade' | 'storage',
   sourceType: 'farmer' as 'farmer' | 'supplier',
   supplierId: '', supplierName: '',
   farmerName: '', farmerPhone: '', farmerNin: '',
   sourceState: '', sourceLga: '', notes: '',
+  quality: EMPTY_QUALITY,
 };
 
 export default function CommodityIntakeScreen() {
@@ -29,6 +38,7 @@ export default function CommodityIntakeScreen() {
   const [createReceipt, { isLoading: generatingReceipt }]  = useCreateReceiptMutation();
 
   const [showForm, setShowForm]         = useState(false);
+  const [lockedFromCollector, setLockedFromCollector] = useState(false);
   const [selected, setSelected]         = useState<CommodityIntake | null>(null);
   const [printReceipt, setPrintReceipt] = useState<WarehouseReceipt | null>(null);
   const [receiptError, setReceiptError] = useState('');
@@ -39,30 +49,41 @@ export default function CommodityIntakeScreen() {
   const suppliers = suppliersData?.data ?? [];
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const setQ = (k: keyof QualitySpecs, v: string) =>
+    setForm(f => ({ ...f, quality: { ...f.quality, [k]: v === '' ? undefined : parseFloat(v) } }));
 
   // Auto-open form prefilled when navigated from Collections → Log Intake
   useEffect(() => {
     const prefill = (location.state as any)?.prefillFromCollection;
     if (!prefill) return;
     setForm({
-      commodity:    prefill.commodity   ?? '',
-      quantityKg:   String(prefill.quantityKg ?? ''),
-      gradeQuality: '',
-      sourceType:   'farmer',
-      supplierId:   '',
-      supplierName: '',
-      farmerName:   prefill.farmerName  ?? '',
-      farmerPhone:  prefill.farmerPhone ?? '',
-      farmerNin:    prefill.farmerNin   ?? '',
-      sourceState:  prefill.sourceState ?? '',
-      sourceLga:    prefill.sourceLga   ?? '',
-      notes:        prefill.collectionRef ? `From collection ${prefill.collectionRef}` : '',
+      commodity:       prefill.commodity   ?? '',
+      quantityKg:      String(prefill.quantityKg ?? ''),
+      gradeQuality:    prefill.gradeQuality ?? '',
+      transactionType: 'trade',
+      sourceType:      'farmer',
+      supplierId:      '',
+      supplierName:    '',
+      farmerName:      prefill.farmerName  ?? '',
+      farmerPhone:     prefill.farmerPhone ?? '',
+      farmerNin:       prefill.farmerNin   ?? '',
+      sourceState:     prefill.sourceState ?? '',
+      sourceLga:       prefill.sourceLga   ?? '',
+      notes:           prefill.collectionRef ? `From collection ${prefill.collectionRef}` : '',
+      quality:         prefill.qualitySpecs ? JSON.parse(prefill.qualitySpecs) : EMPTY_QUALITY,
     });
+    setLockedFromCollector(true);
     setFormError('');
     setShowForm(true);
-    // Clear the state so refreshing doesn't re-open the form
     window.history.replaceState({}, '');
   }, []);
+
+  const openFreshForm = () => {
+    setForm(EMPTY_FORM);
+    setLockedFromCollector(false);
+    setFormError('');
+    setShowForm(true);
+  };
 
   const handleSupplierSelect = (id: string) => {
     set('supplierId', id);
@@ -77,23 +98,27 @@ export default function CommodityIntakeScreen() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
+    const hasQualityData = Object.values(form.quality).some(v => v !== undefined);
     try {
       await createIntake({
-        commodity:    form.commodity,
-        quantityKg:   parseFloat(form.quantityKg),
-        gradeQuality: form.gradeQuality   || undefined,
-        sourceType:   form.sourceType,
-        supplierId:   form.supplierId ? parseInt(form.supplierId) : undefined,
-        supplierName: form.sourceType === 'supplier' ? (form.supplierName || undefined) : undefined,
-        farmerName:   form.sourceType === 'farmer'   ? (form.farmerName   || undefined) : undefined,
-        farmerPhone:  form.sourceType === 'farmer'   ? (form.farmerPhone  || undefined) : undefined,
-        farmerNin:    form.sourceType === 'farmer'   ? (form.farmerNin    || undefined) : undefined,
-        sourceState:  form.sourceState  || undefined,
-        sourceLga:    form.sourceLga    || undefined,
-        notes:        form.notes        || undefined,
+        commodity:       form.commodity,
+        quantityKg:      parseFloat(form.quantityKg),
+        gradeQuality:    form.gradeQuality   || undefined,
+        transactionType: form.transactionType,
+        qualitySpecs:    hasQualityData ? form.quality : undefined,
+        sourceType:      form.sourceType,
+        supplierId:      form.supplierId ? parseInt(form.supplierId) : undefined,
+        supplierName:    form.sourceType === 'supplier' ? (form.supplierName || undefined) : undefined,
+        farmerName:      form.sourceType === 'farmer'   ? (form.farmerName   || undefined) : undefined,
+        farmerPhone:     form.sourceType === 'farmer'   ? (form.farmerPhone  || undefined) : undefined,
+        farmerNin:       form.sourceType === 'farmer'   ? (form.farmerNin    || undefined) : undefined,
+        sourceState:     form.sourceState  || undefined,
+        sourceLga:       form.sourceLga    || undefined,
+        notes:           form.notes        || undefined,
       }).unwrap();
       setShowForm(false);
       setForm(EMPTY_FORM);
+      setLockedFromCollector(false);
     } catch (err: any) {
       setFormError(err?.data?.message ?? 'Failed to log intake.');
     }
@@ -118,13 +143,20 @@ export default function CommodityIntakeScreen() {
     }
   };
 
+  const parseSpecs = (raw: string): QualitySpecs => {
+    try { return JSON.parse(raw); } catch { return {}; }
+  };
+
   const intakes      = data?.data ?? [];
   const totalToday   = intakes
     .filter(i => i.createdAt.slice(0, 10) === new Date().toISOString().slice(0, 10))
     .reduce((sum, i) => sum + i.quantityKg, 0);
   const totalAll     = intakes.reduce((sum, i) => sum + i.quantityKg, 0);
+  const totalTrade   = intakes.filter(i => i.transactionType !== 'storage').reduce((s, i) => s + i.quantityKg, 0);
+  const totalStorage = intakes.filter(i => i.transactionType === 'storage').reduce((s, i) => s + i.quantityKg, 0);
 
   const inputCls = 'w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-200 bg-white';
+  const lockedInputCls = 'w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm bg-slate-50 text-slate-500 cursor-not-allowed';
   const labelCls = 'block text-sm font-medium text-slate-700 mb-1';
 
   return (
@@ -135,7 +167,7 @@ export default function CommodityIntakeScreen() {
           <p className="text-slate-500 text-sm mt-0.5">Log and track commodities received at your centre</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
+          onClick={openFreshForm}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-boa-green text-white text-sm font-semibold hover:bg-emerald-700 transition"
         >
           <span className="material-symbols-outlined text-base">add</span>
@@ -144,10 +176,11 @@ export default function CommodityIntakeScreen() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard label="Total Intakes"  value={data?.total ?? intakes.length}       icon="inventory_2" color="bg-emerald-50 text-emerald-700 border-emerald-200" />
-        <StatCard label="Today's Volume" value={`${totalToday.toLocaleString()} kg`} icon="scale"       color="bg-blue-50 text-blue-700 border-blue-200" />
-        <StatCard label="Total Volume"   value={`${totalAll.toLocaleString()} kg`}   icon="warehouse"   color="bg-amber-50 text-amber-700 border-amber-200" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <StatCard label="Total Intakes"   value={data?.total ?? intakes.length}       icon="inventory_2"  color="bg-emerald-50 text-emerald-700 border-emerald-200" />
+        <StatCard label="Today's Volume"  value={`${totalToday.toLocaleString()} kg`} icon="scale"        color="bg-blue-50 text-blue-700 border-blue-200" />
+        <StatCard label="For Trade"       value={`${totalTrade.toLocaleString()} kg`} icon="store"        color="bg-amber-50 text-amber-700 border-amber-200" />
+        <StatCard label="In Storage"      value={`${totalStorage.toLocaleString()} kg`} icon="warehouse"  color="bg-purple-50 text-purple-700 border-purple-200" />
       </div>
 
       {/* Table */}
@@ -161,13 +194,14 @@ export default function CommodityIntakeScreen() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[600px]">
+            <table className="w-full text-sm min-w-[700px]">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
                   <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Ref ID</th>
                   <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Source</th>
                   <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Commodity</th>
                   <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Quantity</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</th>
                   <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Grade</th>
                   <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">From</th>
                   <th className="text-left px-5 py-3.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</th>
@@ -178,11 +212,10 @@ export default function CommodityIntakeScreen() {
                 {intakes.map((intake) => (
                   <tr key={intake.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3.5 font-mono text-xs text-slate-500">{intake.refId}</td>
-                    <td className="px-5 py-3.5">
-                      <SourceBadge type={intake.sourceType ?? 'farmer'} />
-                    </td>
+                    <td className="px-5 py-3.5"><SourceBadge type={intake.sourceType ?? 'farmer'} /></td>
                     <td className="px-5 py-3.5 font-medium text-slate-800">{intake.commodity}</td>
                     <td className="px-5 py-3.5 text-slate-700">{intake.quantityKg.toLocaleString()} kg</td>
+                    <td className="px-5 py-3.5"><TxTypeBadge type={intake.transactionType} /></td>
                     <td className="px-5 py-3.5 text-slate-600">{intake.gradeQuality ?? '—'}</td>
                     <td className="px-5 py-3.5 text-slate-600">
                       {intake.sourceType === 'supplier'
@@ -216,15 +249,54 @@ export default function CommodityIntakeScreen() {
       {/* Log Intake Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowForm(false)} />
+          <div className="absolute inset-0 bg-black/40" onClick={() => { setShowForm(false); setLockedFromCollector(false); }} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-slate-800">Log Commodity Intake</h2>
-              <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-800">Log Commodity Intake</h2>
+                {lockedFromCollector && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1 mt-0.5">
+                    <span className="material-symbols-outlined text-xs" style={{ fontSize: 13 }}>lock</span>
+                    Pre-filled from collection — some fields are locked
+                  </p>
+                )}
+              </div>
+              <button onClick={() => { setShowForm(false); setLockedFromCollector(false); }} className="text-slate-400 hover:text-slate-600">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+
+              {/* Transaction type toggle */}
+              <div>
+                <label className={labelCls}>Transaction Type <span className="text-red-400">*</span></label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['trade', 'storage'] as const).map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => !lockedFromCollector && setForm(f => ({ ...f, transactionType: type }))}
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition
+                        ${form.transactionType === type
+                          ? type === 'trade'
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                            : 'border-purple-500 bg-purple-50 text-purple-700'
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                    >
+                      <span className="material-symbols-outlined text-base">
+                        {type === 'trade' ? 'store' : 'warehouse'}
+                      </span>
+                      {type === 'trade' ? 'For Trade' : 'For Storage'}
+                    </button>
+                  ))}
+                </div>
+                {form.transactionType === 'storage' && (
+                  <p className="text-xs text-purple-600 mt-1.5 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-xs" style={{ fontSize: 13 }}>info</span>
+                    Storage commodities will not appear in tradeable inventory.
+                  </p>
+                )}
+              </div>
 
               {/* Source type toggle */}
               <div>
@@ -234,7 +306,7 @@ export default function CommodityIntakeScreen() {
                     <button
                       key={type}
                       type="button"
-                      onClick={() => setForm(f => ({ ...f, sourceType: type, commodity: '' }))}
+                      onClick={() => !lockedFromCollector && setForm(f => ({ ...f, sourceType: type, commodity: '' }))}
                       className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition
                         ${form.sourceType === type
                           ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
@@ -256,20 +328,20 @@ export default function CommodityIntakeScreen() {
                     {form.sourceType === 'supplier' ? 'Product / Item' : 'Commodity'}
                     <span className="text-red-400"> *</span>
                   </label>
-                  {form.sourceType === 'supplier' ? (
+                  {lockedFromCollector ? (
+                    <input value={form.commodity} disabled className={lockedInputCls} />
+                  ) : form.sourceType === 'supplier' ? (
                     <input
                       value={form.commodity}
                       onChange={e => set('commodity', e.target.value)}
-                      required
-                      className={inputCls}
-                      placeholder="e.g. AZ Fertilizer, Jute Bags, Palm Oil…"
+                      required className={inputCls}
+                      placeholder="e.g. AZ Fertilizer, Jute Bags…"
                     />
                   ) : COMMODITIES.includes(form.commodity) || form.commodity === '' ? (
                     <select
                       value={form.commodity}
                       onChange={e => e.target.value === '__other__' ? set('commodity', ' ') : set('commodity', e.target.value)}
-                      required
-                      className={inputCls}
+                      required className={inputCls}
                     >
                       <option value="">Select commodity…</option>
                       {COMMODITIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -277,27 +349,21 @@ export default function CommodityIntakeScreen() {
                     </select>
                   ) : (
                     <div className="flex gap-1">
-                      <input
-                        value={form.commodity.trim()}
-                        onChange={e => set('commodity', e.target.value)}
-                        required
-                        className={inputCls}
-                        placeholder="Type commodity name…"
-                        autoFocus
-                      />
-                      <button
-                        type="button"
-                        onClick={() => set('commodity', '')}
-                        className="px-3 border border-slate-200 rounded-xl text-slate-400 hover:text-slate-600 text-sm"
-                        title="Back to list"
-                      >↩</button>
+                      <input value={form.commodity.trim()} onChange={e => set('commodity', e.target.value)}
+                        required className={inputCls} placeholder="Type commodity name…" autoFocus />
+                      <button type="button" onClick={() => set('commodity', '')}
+                        className="px-3 border border-slate-200 rounded-xl text-slate-400 hover:text-slate-600 text-sm">↩</button>
                     </div>
                   )}
                 </div>
                 <div>
                   <label className={labelCls}>Quantity (kg) <span className="text-red-400">*</span></label>
-                  <input type="number" min="0.1" step="0.1" value={form.quantityKg} onChange={e => set('quantityKg', e.target.value)} required
-                    className={inputCls} placeholder="e.g. 1000" />
+                  {lockedFromCollector ? (
+                    <input value={form.quantityKg} disabled className={lockedInputCls} />
+                  ) : (
+                    <input type="number" min="0.1" step="0.1" value={form.quantityKg} onChange={e => set('quantityKg', e.target.value)}
+                      required className={inputCls} placeholder="e.g. 1000" />
+                  )}
                 </div>
                 <div>
                   <label className={labelCls}>Grade / Quality</label>
@@ -306,7 +372,66 @@ export default function CommodityIntakeScreen() {
                 </div>
               </div>
 
-              {/* Conditional: Supplier section */}
+              {/* Quality Specs section */}
+              <div>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1 mb-2">
+                  Quality Specifications (optional)
+                </p>
+                {lockedFromCollector && (
+                  <p className="text-xs text-amber-600 flex items-center gap-1 mb-2">
+                    <span className="material-symbols-outlined text-xs" style={{ fontSize: 13 }}>lock</span>
+                    Quality specs locked — recorded at collection point
+                  </p>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Moisture Content (%)</label>
+                    {lockedFromCollector ? (
+                      <input value={form.quality.moistureContent ?? ''} disabled className={lockedInputCls} />
+                    ) : (
+                      <input type="number" min="0" max="100" step="0.1"
+                        value={form.quality.moistureContent ?? ''}
+                        onChange={e => setQ('moistureContent', e.target.value)}
+                        className={inputCls} placeholder="e.g. 12.5" />
+                    )}
+                  </div>
+                  <div>
+                    <label className={labelCls}>Foreign Matter (%)</label>
+                    {lockedFromCollector ? (
+                      <input value={form.quality.foreignMatter ?? ''} disabled className={lockedInputCls} />
+                    ) : (
+                      <input type="number" min="0" max="100" step="0.1"
+                        value={form.quality.foreignMatter ?? ''}
+                        onChange={e => setQ('foreignMatter', e.target.value)}
+                        className={inputCls} placeholder="e.g. 2.0" />
+                    )}
+                  </div>
+                  <div>
+                    <label className={labelCls}>Pest Damage (%)</label>
+                    {lockedFromCollector ? (
+                      <input value={form.quality.pestDamage ?? ''} disabled className={lockedInputCls} />
+                    ) : (
+                      <input type="number" min="0" max="100" step="0.1"
+                        value={form.quality.pestDamage ?? ''}
+                        onChange={e => setQ('pestDamage', e.target.value)}
+                        className={inputCls} placeholder="e.g. 0.5" />
+                    )}
+                  </div>
+                  <div>
+                    <label className={labelCls}>Broken Grains (%)</label>
+                    {lockedFromCollector ? (
+                      <input value={form.quality.brokenGrains ?? ''} disabled className={lockedInputCls} />
+                    ) : (
+                      <input type="number" min="0" max="100" step="0.1"
+                        value={form.quality.brokenGrains ?? ''}
+                        onChange={e => setQ('brokenGrains', e.target.value)}
+                        className={inputCls} placeholder="e.g. 1.0" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Supplier section */}
               {form.sourceType === 'supplier' && (
                 <>
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Supplier Details</p>
@@ -327,35 +452,55 @@ export default function CommodityIntakeScreen() {
                 </>
               )}
 
-              {/* Conditional: Farmer section */}
+              {/* Farmer section */}
               {form.sourceType === 'farmer' && (
                 <>
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pt-1">Farmer Details (optional)</p>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
                       <label className={labelCls}>Farmer Name</label>
-                      <input value={form.farmerName} onChange={e => set('farmerName', e.target.value)}
-                        className={inputCls} placeholder="Full name" />
+                      {lockedFromCollector ? (
+                        <input value={form.farmerName} disabled className={lockedInputCls} />
+                      ) : (
+                        <input value={form.farmerName} onChange={e => set('farmerName', e.target.value)}
+                          className={inputCls} placeholder="Full name" />
+                      )}
                     </div>
                     <div>
                       <label className={labelCls}>Phone</label>
-                      <input value={form.farmerPhone} onChange={e => set('farmerPhone', e.target.value)}
-                        className={inputCls} placeholder="08012345678" />
+                      {lockedFromCollector ? (
+                        <input value={form.farmerPhone} disabled className={lockedInputCls} />
+                      ) : (
+                        <input value={form.farmerPhone} onChange={e => set('farmerPhone', e.target.value)}
+                          className={inputCls} placeholder="08012345678" />
+                      )}
                     </div>
                     <div>
                       <label className={labelCls}>NIN</label>
-                      <input value={form.farmerNin} onChange={e => set('farmerNin', e.target.value)}
-                        className={inputCls} placeholder="11-digit NIN" />
+                      {lockedFromCollector ? (
+                        <input value={form.farmerNin} disabled className={lockedInputCls} />
+                      ) : (
+                        <input value={form.farmerNin} onChange={e => set('farmerNin', e.target.value)}
+                          className={inputCls} placeholder="11-digit NIN" />
+                      )}
                     </div>
                     <div>
                       <label className={labelCls}>Source State</label>
-                      <input value={form.sourceState} onChange={e => set('sourceState', e.target.value)}
-                        className={inputCls} placeholder="e.g. Kano" />
+                      {lockedFromCollector ? (
+                        <input value={form.sourceState} disabled className={lockedInputCls} />
+                      ) : (
+                        <input value={form.sourceState} onChange={e => set('sourceState', e.target.value)}
+                          className={inputCls} placeholder="e.g. Kano" />
+                      )}
                     </div>
                     <div>
                       <label className={labelCls}>Source LGA</label>
-                      <input value={form.sourceLga} onChange={e => set('sourceLga', e.target.value)}
-                        className={inputCls} placeholder="e.g. Kano Municipal" />
+                      {lockedFromCollector ? (
+                        <input value={form.sourceLga} disabled className={lockedInputCls} />
+                      ) : (
+                        <input value={form.sourceLga} onChange={e => set('sourceLga', e.target.value)}
+                          className={inputCls} placeholder="e.g. Kano Municipal" />
+                      )}
                     </div>
                   </div>
                 </>
@@ -370,7 +515,7 @@ export default function CommodityIntakeScreen() {
               {formError && <p className="text-sm text-red-500">{formError}</p>}
 
               <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setShowForm(false)}
+                <button type="button" onClick={() => { setShowForm(false); setLockedFromCollector(false); }}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition">
                   Cancel
                 </button>
@@ -391,9 +536,10 @@ export default function CommodityIntakeScreen() {
           <div className="w-full max-w-md bg-white h-full overflow-y-auto shadow-2xl flex flex-col">
             <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between sticky top-0 bg-white z-10">
               <div>
-                <div className="flex items-center gap-2 mb-0.5">
+                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                   <p className="font-semibold text-slate-800">{selected.commodity}</p>
                   <SourceBadge type={selected.sourceType ?? 'farmer'} />
+                  <TxTypeBadge type={selected.transactionType} />
                 </div>
                 <p className="text-xs text-slate-400 font-mono">{selected.refId}</p>
               </div>
@@ -404,11 +550,26 @@ export default function CommodityIntakeScreen() {
 
             <div className="flex-1 px-6 py-5 space-y-5 text-sm">
               <Section label="Intake Details">
-                <Field label="Commodity"   value={selected.commodity} />
-                <Field label="Quantity"    value={`${selected.quantityKg.toLocaleString()} kg`} />
-                <Field label="Grade"       value={selected.gradeQuality} />
-                <Field label="Date Logged" value={selected.createdAt.slice(0, 10)} />
+                <Field label="Commodity"        value={selected.commodity} />
+                <Field label="Quantity"         value={`${selected.quantityKg.toLocaleString()} kg`} />
+                <Field label="Transaction Type" value={selected.transactionType === 'storage' ? 'Storage Only' : 'For Trade'} />
+                <Field label="Grade"            value={selected.gradeQuality} />
+                <Field label="Date Logged"      value={selected.createdAt.slice(0, 10)} />
               </Section>
+
+              {/* Quality specs */}
+              {(() => {
+                const specs = parseSpecs(selected.qualitySpecs);
+                const hasSpecs = Object.values(specs).some(v => v !== undefined);
+                return hasSpecs ? (
+                  <Section label="Quality Specifications">
+                    {specs.moistureContent !== undefined && <Field label="Moisture Content" value={`${specs.moistureContent}%`} />}
+                    {specs.foreignMatter   !== undefined && <Field label="Foreign Matter"   value={`${specs.foreignMatter}%`} />}
+                    {specs.pestDamage      !== undefined && <Field label="Pest Damage"      value={`${specs.pestDamage}%`} />}
+                    {specs.brokenGrains    !== undefined && <Field label="Broken Grains"    value={`${specs.brokenGrains}%`} />}
+                  </Section>
+                ) : null;
+              })()}
 
               {selected.sourceType === 'supplier' ? (
                 <Section label="Supplier Information">
@@ -432,8 +593,8 @@ export default function CommodityIntakeScreen() {
                 </Section>
               )}
 
-              {/* Generate receipt callout — only for farmer intakes */}
-              {selected.sourceType !== 'supplier' && (
+              {/* Generate receipt — only trade + farmer intakes */}
+              {selected.sourceType !== 'supplier' && selected.transactionType !== 'storage' && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
                   <p className="text-sm font-semibold text-emerald-800 mb-0.5">Ready to issue a receipt?</p>
                   <p className="text-xs text-emerald-600 mb-3">Generate an AgriHub Receipt (AHR) for this intake — all details will be pre-filled.</p>
@@ -449,33 +610,46 @@ export default function CommodityIntakeScreen() {
                 </div>
               )}
 
-              {/* Post to Marketplace */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                <p className="text-sm font-semibold text-amber-800 mb-0.5">Post to Marketplace?</p>
-                <p className="text-xs text-amber-600 mb-3">
-                  Create a marketplace listing for this intake — commodity, quantity and grade will be pre-filled.
-                </p>
-                <button
-                  onClick={() => {
-                    setSelected(null);
-                    navigate('/manager/marketplace/listings', {
-                      state: {
-                        prefill: {
-                          commodity:           selected.commodity,
-                          quantityAvailableKg: selected.quantityKg,
-                          gradeQuality:        selected.gradeQuality ?? '',
-                          centreState:         selected.sourceState  ?? '',
-                          centreLga:           selected.sourceLga    ?? '',
+              {/* Post to Marketplace — only trade intakes */}
+              {selected.transactionType !== 'storage' && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-amber-800 mb-0.5">Post to Marketplace?</p>
+                  <p className="text-xs text-amber-600 mb-3">
+                    Create a marketplace listing — commodity, quantity, grade and quality specs will be pre-filled.
+                  </p>
+                  <button
+                    onClick={() => {
+                      const specs = parseSpecs(selected.qualitySpecs);
+                      setSelected(null);
+                      navigate('/manager/marketplace/listings', {
+                        state: {
+                          prefill: {
+                            commodity:           selected.commodity,
+                            quantityAvailableKg: selected.quantityKg,
+                            gradeQuality:        selected.gradeQuality ?? '',
+                            centreState:         selected.sourceState  ?? '',
+                            centreLga:           selected.sourceLga    ?? '',
+                            specs,
+                          },
                         },
-                      },
-                    });
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition"
-                >
-                  <span className="material-symbols-outlined text-base">storefront</span>
-                  Post to Marketplace
-                </button>
-              </div>
+                      });
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition"
+                  >
+                    <span className="material-symbols-outlined text-base">storefront</span>
+                    Post to Marketplace
+                  </button>
+                </div>
+              )}
+
+              {selected.transactionType === 'storage' && (
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-purple-800 mb-0.5">Storage Only</p>
+                  <p className="text-xs text-purple-600">
+                    This commodity is held in storage and is not available for trade or marketplace listing.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="px-6 py-4 border-t border-slate-100 sticky bottom-0 bg-white">
@@ -499,15 +673,23 @@ export default function CommodityIntakeScreen() {
   );
 }
 
+function TxTypeBadge({ type }: { type: 'trade' | 'storage' | null | undefined }) {
+  return type === 'storage'
+    ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+        <span className="material-symbols-outlined" style={{ fontSize: 11 }}>warehouse</span>Storage
+      </span>
+    : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+        <span className="material-symbols-outlined" style={{ fontSize: 11 }}>store</span>Trade
+      </span>;
+}
+
 function SourceBadge({ type }: { type: string }) {
   return type === 'supplier'
     ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-        <span className="material-symbols-outlined text-xs" style={{ fontSize: 12 }}>storefront</span>
-        Supplier
+        <span className="material-symbols-outlined" style={{ fontSize: 12 }}>storefront</span>Supplier
       </span>
     : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-        <span className="material-symbols-outlined text-xs" style={{ fontSize: 12 }}>agriculture</span>
-        Farmer
+        <span className="material-symbols-outlined" style={{ fontSize: 12 }}>agriculture</span>Farmer
       </span>;
 }
 
