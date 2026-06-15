@@ -5,6 +5,7 @@ import type { RootState } from '../../store/store';
 
 const navItems = [
   { label: 'Dashboard',           icon: 'dashboard',        to: '/manager/dashboard',    group: 'main' },
+  { label: 'Reports',             icon: 'bar_chart',        to: '/manager/reports',      group: 'main' },
   { label: 'Commodity Intake',    icon: 'inventory_2',      to: '/manager/intake',       group: 'main' },
   { label: 'AgriHub Receipts',     icon: 'receipt_long',     to: '/manager/receipts',     group: 'main' },
   { label: 'Inventory & POS',     icon: 'point_of_sale',    to: '/manager/inventory',    group: 'main' },

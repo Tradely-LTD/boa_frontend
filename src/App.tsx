@@ -37,6 +37,7 @@ import HireRequestsScreen             from './screens/manager_screens/mechanizat
 import MechDeploymentsScreen          from './screens/manager_screens/mechanization/MechDeploymentsScreen';
 import CommodityPricesScreen          from './screens/manager_screens/prices/CommodityPricesScreen';
 import ManagerShopsScreen             from './screens/shop_screens/ManagerShopsScreen';
+import ManagerReportsScreen           from './screens/manager_screens/reports/ManagerReportsScreen';
 
 // Collector screens
 import CollectionAssignmentsScreen  from './screens/collector_screens/CollectionAssignmentsScreen';
@@ -105,6 +106,7 @@ export default function App() {
               <Route path="/manager/settings"      element={<SettingsScreen />} />
               <Route path="/manager/commodity-prices" element={<CommodityPricesScreen />} />
               <Route path="/manager/shops"            element={<ManagerShopsScreen />} />
+              <Route path="/manager/reports"          element={<ManagerReportsScreen />} />
             </Route>
           </Route>
 
